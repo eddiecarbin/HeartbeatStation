@@ -153,7 +153,7 @@ void setup() {
  // LED1
  pinMode(LED1, OUTPUT);  //Setup LED1 direction
  digitalWrite(LED1,LOW); //Setup LED1 state
- pinMode(CAL_SIG, OUTPUT);
+ pinMode(5, OUTPUT);
  
  //Write packet header and footer
  TXBuf[0] = 0xa5;    //Sync 0
