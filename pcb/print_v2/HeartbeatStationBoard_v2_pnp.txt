@@ -1,0 +1,31 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=HeartbeatStationBoard_v2
+*Date=15:06:44
+*CreatedBy=Fritzing 0.9.4.2019-12-01.CD-498-0-a1ffcea
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;;34.3098;-11.2123;0;Bottom;DFRobot DFPlayer Mini1
+2;;THT;13.6299;-3.17433;-90;Bottom;Speaker
+3;;;7.41523;-17.7252;-0.999999;Bottom;TXT1
+4;;;2.64775;-83.3897;0;Bottom;Hole3
+5;;;56.3988;-2.70509;0;Bottom;Hole1
+6;10;THT;38.3522;-31.8732;90;Bottom;R1
+7;;THT;6.2157;-41.2337;0;Bottom;J2
+8;;THT;51.9131;-43.8281;0;Bottom;J3
+9;;;2.64775;-2.70509;0;Bottom;Hole4
+10;;;56.3909;-83.4333;0;Bottom;Hole2
+11;;THT;53.6579;-19.3172;0;Bottom;LED 0
+12;;THT;6.21067;-61.5602;0;Bottom;J1
+13;;THT;16.776;-24.7312;-90;Bottom;Vol
+14;;;7.56709;-23.2049;-0.999999;Bottom;TXT1
+15;;THT;51.9026;-68.1965;0;Bottom;J4
+16;;THT;4.14815;-20.748;0;Bottom;Power
