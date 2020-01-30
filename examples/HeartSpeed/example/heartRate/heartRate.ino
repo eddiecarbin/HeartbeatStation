@@ -45,7 +45,7 @@ void mycb(uint8_t rawData, int value)
 
     ADCFilter.Filter(value);
     Serial.println( ADCFilter.Current());
-    delay(1000);
+    //delay(1000);
   } else {
     Serial.print("HeartRate Value = "); Serial.println(value);
   }
