@@ -8,6 +8,8 @@
 #include "Fsm.h"
 //#include <PulseSensorPlayground.h>
 #include <SoftwareSerial.h>
+#include "../lib/HeartSpeed/HeartSpeed.h"
+#include <Filter.h>
 
 #define USE_ARDUINO_INTERRUPTS true
 #define GO_TO_WAIT_FOR_USER 2
@@ -37,6 +39,9 @@ int digitArray[4] = {0, 1, 3, 4};
 bool blinkState = false;
 int BPM = 0;
 
+ExponentialFilter<long> ADCFilter(5, 0);
+HeartSpeed heartspeed(A0,RAW_DATA); 
+
 void OnIdleWaitForUserEnter()
 {
 
@@ -65,15 +70,15 @@ void OnIdleWaitForUserUpdate()
     matrix.writeDisplay();
   }
 
-  if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  {
-    //Serial.println(0);
-  }
-  else
-  {
-    // send the value of analog input 0:
-    //Serial.println(analogRead(A0));
-  }
+  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  // {
+  //Serial.println(0);
+  // }
+  // else
+  // {
+  // send the value of analog input 0:
+  //Serial.println(analogRead(A0));
+  // }
 }
 
 /*------------------------------------------------
@@ -126,9 +131,17 @@ State StateWaitForUser(&OnIdleWaitForUserEnter, &OnIdleWaitForUserUpdate, NULL);
 State StateCalculateBPM(&OnCalculateBPMEnter, &OnCalculateBPMUpdate, NULL);
 State StateDisplayBPM(&OnDisplayBPMEnter, &OnDisplyBPMUpdate, NULL);
 
-
 //https://www.megunolink.com/articles/coding/3-methods-filter-noisy-arduino-measurements/
 
+
+void mycb(uint8_t rawData, int value)
+{
+	if(rawData){
+		Serial.println(value);
+	}else{
+		Serial.print("HeartRate Value = "); Serial.println(value);
+	}
+}
 
 void setup()
 {
@@ -137,13 +150,13 @@ void setup()
 
   delay(3000);
 
-  pinMode(10, INPUT); // Setup for leads off detection LO +
-  pinMode(11, INPUT); // Setup for leads off detection LO -
+  // pinMode(10, INPUT); // Setup for leads off detection LO +
+  // pinMode(11, INPUT); // Setup for leads off detection LO -
 
   fsm.add_transition(&StateWaitForUser, &StateCalculateBPM,
                      GO_TO_CALCULATE_HEARTBEAT, NULL);
-  fsm.add_timed_transition(&StateWaitForUser, &StateCalculateBPM, 5000, NULL);
-  
+  // fsm.add_timed_transition(&StateWaitForUser, &StateCalculateBPM, 6000, NULL);
+
   fsm.add_transition(&StateCalculateBPM, &StateWaitForUser,
                      GO_TO_WAIT_FOR_USER, NULL);
 
@@ -155,6 +168,16 @@ void setup()
   fsm.add_timed_transition(&StateDisplayBPM, &StateWaitForUser, 10000, NULL);
 
   matrix.begin(0x72);
+
+
+/*!
+   *  @brief Indstiller callback funktion.
+   */
+  heartspeed.setCB(mycb);    
+  /*!
+   *  @brief Åben puls test.
+   */
+  heartspeed.begin();
 
   // matrix.print(0);
   // matrix.writeDigitRaw(1, 0x40);
