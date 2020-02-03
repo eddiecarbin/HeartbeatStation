@@ -6,10 +6,9 @@
 #include "Adafruit_LEDBackpack.h"
 #include <SPI.h>
 #include "Fsm.h"
-#include "../lib/PulseSensorPlayground/PulseSensorPlayground.h"
-#include <SoftwareSerial.h>
-// #include "../lib/HeartSpeed/HeartSpeed.h"
-#include <Filter.h>
+#include "BPMController.h"
+#include "../lib/SoundPlayer/SoundPlayer.h"
+#include <Smoothed.h> // Include the library
 
 #define USE_ARDUINO_INTERRUPTS true
 #define GO_TO_WAIT_FOR_USER 2
@@ -20,9 +19,6 @@
 #define THINK_DELAY 200
 #define TOTAL_DIGITS 4
 
-#define BPM_MIN 60
-#define BPM_MAX 75
-
 #define BLINK_INTERVAL_0 600
 #define BLINK_INTERVAL_1 300
 
@@ -31,24 +27,17 @@ State StateDoNothing(NULL, NULL, NULL);
 Fsm fsm(&StateDoNothing);
 //PulseSensorPlayground pulseSensor;
 
-int Signal;          // holds the incoming raw data. Signal value can range from 0-1024
-int Threshold = 550; // Determine which Signal to "count as a beat", and which to ingore.
 unsigned long _pause = 0;
 int _aniCount = 0;
 int digitArray[4] = {0, 1, 3, 4};
 bool blinkState = false;
 int BPM = 0;
-int PulseWire = 0;
 bool userRelased = false;
 
-PulseSensorPlayground pulseSensor; // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
-
-ExponentialFilter<long> ADCFilter(5, 0);
-
-//https://github.com/sparkfun/AD8232_Heart_Rate_Monitor/blob/master/Software/Heart_Rate_Display_Arduino/Heart_Rate_Display_Arduino.ino
-//https://github.com/WorldFamousElectronics/PulseSensorPlayground.git
-//https://www.megunolink.com/articles/coding/3-methods-filter-noisy-arduino-measurements/
+// PulseSensorPlayground pulseSensor; // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
 //
+// SoundPlayer soundPlayer(0);
+BPMController BPMmonitor(A0, 10, 11);
 
 long map2(long x, long in_min, long in_max, long out_min, long out_max)
 {
@@ -61,9 +50,8 @@ void OnIdleWaitForUserEnter()
   matrix.writeDisplay();
   _pause = 0;
   BPM = 0;
-
 }
- 
+
 void OnIdleWaitForUserUpdate()
 {
 
@@ -83,22 +71,27 @@ void OnIdleWaitForUserUpdate()
     matrix.writeDisplay();
   }
 
-  if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  // {
+  //   Serial.println('!');
+  // }
+  // else
+  // {
+  //   // send the value of analog input 0:
+
+  //   int sensorOutput = analogRead(A0);
+
+  //   Serial.println(analogRead(A0));
+
+  //   if (sensorOutput > 100)
+  //   {
+  //     fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+  //   }
+  // }
+
+  if (BPMmonitor.detectContact())
   {
-    Serial.println('!');
-  }
-  else
-  {
-    // send the value of analog input 0:
-
-    int sensorOutput = analogRead(A0);
-
-    Serial.println(analogRead(A0));
-
-    if (sensorOutput > 100)
-    {
-      fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-    }
+    fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
   }
 }
 
@@ -110,6 +103,7 @@ void OnCalculateBPMEnter()
 {
   matrix.clear();
   matrix.writeDisplay();
+  // soundPlayer.PlaySound(1);
 }
 
 void OnCalculateBPMUpdate()
@@ -133,20 +127,25 @@ void OnCalculateBPMUpdate()
   }
 
   // FAILED To get heart beat output a random number  of average heartbeat
-  BPM = random(BPM_MIN, BPM_MAX);
+  BPM = BPMmonitor.getBPM();
 
-  if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  if (!BPMmonitor.detectContact())
   {
-    // Serial.println('!');
     fsm.trigger(GO_TO_WAIT_FOR_USER);
   }
-  else
-  {
-    // send the value of analog input 0:
 
-    // int sensorOutput = analogRead(A0);
-  }
+  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  // {
+  //   // Serial.println('!');
+  //   fsm.trigger(GO_TO_WAIT_FOR_USER);
+  // }
 }
+
+void OnCalculateBPMExit()
+{
+  // soundPlayer.StopSound();
+}
+
 
 void OnDisplayBPMEnter()
 {
@@ -159,25 +158,37 @@ void OnDisplayBPMEnter()
 
 void OnDisplyBPMUpdate()
 {
-  if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  {
-    // Serial.println('!');
 
+  if (!BPMmonitor.detectContact())
+  {
     if (!userRelased)
       userRelased = true;
   }
   else
   {
-    // send the value of analog input 0:
     if (userRelased)
       fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-
-    // int sensorOutput = analogRead(A0);
   }
+
+  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
+  // {
+  //   // Serial.println('!');
+
+  //   if (!userRelased)
+  //     userRelased = true;
+  // }
+  // else
+  // {
+  //   // send the value of analog input 0:
+  //   if (userRelased)
+  //     fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+
+  //   // int sensorOutput = analogRead(A0);
+  // }
 }
 
 State StateWaitForUser(&OnIdleWaitForUserEnter, &OnIdleWaitForUserUpdate, NULL);
-State StateCalculateBPM(&OnCalculateBPMEnter, &OnCalculateBPMUpdate, NULL);
+State StateCalculateBPM(&OnCalculateBPMEnter, &OnCalculateBPMUpdate, &OnCalculateBPMExit);
 State StateDisplayBPM(&OnDisplayBPMEnter, &OnDisplyBPMUpdate, NULL);
 
 void setup()
@@ -197,8 +208,8 @@ void setup()
   // {
   //   Serial.println("We created a pulseSensor Object !"); //This prints one time at Arduino power-up,  or on Arduino reset.
   // }
-  pinMode(10, INPUT); // Setup for leads off detection LO +
-  pinMode(11, INPUT); // Setup for leads off detection LO -
+
+  BPMmonitor.intialize();
 
   fsm.add_transition(&StateWaitForUser, &StateCalculateBPM,
                      GO_TO_CALCULATE_HEARTBEAT, NULL);
@@ -215,11 +226,11 @@ void setup()
 
   matrix.begin(0x72);
   fsm.goToState(&StateWaitForUser);
+  // mySensor.clear();
 }
 
 void loop()
 {
-
 
   // int myBPM = pulseSensor.getBeatsPerMinute(); // Calls function on our pulseSensor object that returns BPM as an "int".
   //                                              // "myBPM" hold this BPM value now.
@@ -237,17 +248,13 @@ void loop()
   //   pulseSensor.outputBeat();
   // }
 
-  if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  {
-    Serial.println('!');
-  }
-  else
-  {
-    // send the value of analog input 0:
-    Serial.println(analogRead(A0));
-  }
-  //Wait for a bit to keep serial data from saturating
+  // Add the new value to both sensor value stores
 
+  // Get the smoothed values
+  // float smoothedSensorValueAvg = mySensor.get();
+  // float smoothedSensorValueExp = mySensor2.get();
+  // soundPlayer.update();
+  BPMmonitor.update();
   fsm.run_machine();
   delay(1);
 }

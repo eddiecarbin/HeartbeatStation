@@ -5,45 +5,46 @@
 #include "DFRobotDFPlayerMini.h"
 #include "SoftwareSerial.h"
 
-SoftwareSerial mySoftwareSerial(0, 1); // RX, TX
-
-int fileCount = 0;
-bool soundPlaying = false;
-int soundIdx = 1;
+SoftwareSerial soundSoftwareSerial(5, 4); // RX, TX
+//https://arduino.stackexchange.com/questions/32833/dfplayer-library-using-rt-tx-pins
 
 SoundPlayer::SoundPlayer(int i)
 {
+    this->soundIdx = i;
 }
 
 DFRobotDFPlayerMini myDFPlayer;
 
 void SoundPlayer::initialize()
 {
-    mySoftwareSerial.begin(9600);
+    soundSoftwareSerial.begin(9600);
     Serial.println();
     Serial.println(F("DFRobot DFPlayer Mini Demo"));
     Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-    if (!myDFPlayer.begin(mySoftwareSerial))
+    int fileCount = 0;
+    bool soundPlaying = false;
+
+    if (!myDFPlayer.begin(soundSoftwareSerial))
     { //Use softwareSerial to communicate with mp3.
         Serial.println(F("Unable to begin:"));
         Serial.println(F("1.Please recheck the connection!"));
         Serial.println(F("2.Please insert the SD card!"));
-        while (true)
-            ;
+        // while (true)
+        //     ;
     }
-    Serial.println(F("DFPlayer Mini online."));
+    //Serial.println(F("DFPlayer Mini online."));
 
     myDFPlayer.volume(30); //Set volume value. From 0 to 30
 
     fileCount = myDFPlayer.readFileCounts();
-    // myDFPlayer.play(1); //Play the first mp3
+    //myDFPlayer.play(1); //Play the first mp3
 
     Serial.print("file count = ");
     Serial.println(fileCount);
 }
-
 void SoundPlayer::update()
+
 {
 
     if (myDFPlayer.available() && soundPlaying == true)
@@ -53,14 +54,14 @@ void SoundPlayer::update()
         if (myDFPlayer.readType() == DFPlayerPlayFinished)
         {
             soundPlaying = false;
-            Serial.println("sound complete");
+            //Serial.println("sound complete");
         }
     }
 }
 
 bool SoundPlayer::isPlaying()
 {
-    return (digitalRead(3) == 0);
+    return soundPlaying;
 }
 
 void SoundPlayer::PlaySound(int value)

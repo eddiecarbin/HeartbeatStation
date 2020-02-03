@@ -25,6 +25,7 @@ private:
     int pin;
     int fileCount;
     bool soundPlaying;
+    int soundIdx;
     void printDetail(uint8_t type, int value);
     DFRobotDFPlayerMini myDFPlayer;
 };
