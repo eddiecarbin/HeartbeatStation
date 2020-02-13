@@ -1,7 +1,7 @@
 #ifndef BPMCONTROLLER_H_
 #define BPMCONTROLLER_H_
 #include <Arduino.h>
-#include <Smoothed.h>
+#include "../lib/Smoothed/src/Smoothed.h"
 // #include <Filter.h>
 
 #define BPM_MIN 60
@@ -75,7 +75,7 @@ void BPMController::update()
     {
         detectBeat = false;
         lastBeatTime = m;
-        // Serial.println(":what");
+        Serial.println(":what");
     }
     else
     {
@@ -83,22 +83,24 @@ void BPMController::update()
 
         if (m > (lastBeatTime + MIN_BEAT_TIME))
         {
-            detectBeat = true;
         }
 
+        detectBeat = true;
         int sensorOutput = analogRead(output);
-        // Serial.print(sensorOutput);
-        // Serial.print(",");
+        Serial.println(sensorOutput);
+        //Serial.print(",");
         // FilteredSignal->Filter(sensorOutput);
-        // Serial.println(FilteredSignal->Current());
-        mySensor.add(sensorOutput);
+        //Serial.println(FilteredSignal->Current());
+        //mySensor.add(sensorOutput);
         // mySensor2.add(sensorOutput);
-
-        Serial.println(mySensor.get());
+        //float s = mySensor.get();
+        //Serial.println(mySensor.get());
         // Serial.print(",");
         // Serial.println(mySensor2.get());
-        if (sensorOutput > 100)
+        if (sensorOutput < 200)
         {
+
+            detectBeat = false;
         }
     }
 }

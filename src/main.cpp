@@ -6,9 +6,9 @@
 #include "Adafruit_LEDBackpack.h"
 #include <SPI.h>
 #include "Fsm.h"
-#include "BPMController.h"
+//#include "BPMController.h"
 #include "../lib/SoundPlayer/SoundPlayer.h"
-#include <Smoothed.h> // Include the library
+#include <CapacitiveSensor.h>
 
 #define USE_ARDUINO_INTERRUPTS true
 #define GO_TO_WAIT_FOR_USER 2
@@ -25,7 +25,6 @@
 Adafruit_7segment matrix = Adafruit_7segment();
 State StateDoNothing(NULL, NULL, NULL);
 Fsm fsm(&StateDoNothing);
-//PulseSensorPlayground pulseSensor;
 
 unsigned long _pause = 0;
 int _aniCount = 0;
@@ -34,15 +33,17 @@ bool blinkState = false;
 int BPM = 0;
 bool userRelased = false;
 
-// PulseSensorPlayground pulseSensor; // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
-//
-// SoundPlayer soundPlayer(0);
-BPMController BPMmonitor(A0, 10, 11);
+SoundPlayer soundPlayer(0);
+//BPMController BPMmonitor(A0, 10, 11);
+CapacitiveSensor cs(10, 11);
+
+//CapacitiveSensor cs_4_2 = CapacitiveSensor(4,2);
 
 long map2(long x, long in_min, long in_max, long out_min, long out_max)
 {
   return (x - in_min) * (out_max - out_min + 1) / (in_max - in_min + 1) + out_min;
 }
+
 void OnIdleWaitForUserEnter()
 {
 
@@ -89,9 +90,9 @@ void OnIdleWaitForUserUpdate()
   //   }
   // }
 
-  if (BPMmonitor.detectContact())
+  //if (BPMmonitor.detectContact())
   {
-    fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+    //fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
   }
 }
 
@@ -103,7 +104,7 @@ void OnCalculateBPMEnter()
 {
   matrix.clear();
   matrix.writeDisplay();
-  // soundPlayer.PlaySound(1);
+  soundPlayer.PlaySound(1);
 }
 
 void OnCalculateBPMUpdate()
@@ -127,11 +128,11 @@ void OnCalculateBPMUpdate()
   }
 
   // FAILED To get heart beat output a random number  of average heartbeat
-  BPM = BPMmonitor.getBPM();
+  BPM = 50;//BPMmonitor.getBPM();
 
-  if (!BPMmonitor.detectContact())
+  //if (!BPMmonitor.detectContact())
   {
-    fsm.trigger(GO_TO_WAIT_FOR_USER);
+    //fsm.trigger(GO_TO_WAIT_FOR_USER);
   }
 
   // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
@@ -143,9 +144,8 @@ void OnCalculateBPMUpdate()
 
 void OnCalculateBPMExit()
 {
-  // soundPlayer.StopSound();
+  soundPlayer.StopSound();
 }
-
 
 void OnDisplayBPMEnter()
 {
@@ -159,16 +159,16 @@ void OnDisplayBPMEnter()
 void OnDisplyBPMUpdate()
 {
 
-  if (!BPMmonitor.detectContact())
+/*  // if (!BPMmonitor.detectContact())
   {
     if (!userRelased)
       userRelased = true;
   }
-  else
+  //else
   {
-    if (userRelased)
-      fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-  }
+    //if (userRelased)
+     // fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+  } */
 
   // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
   // {
@@ -197,7 +197,10 @@ void setup()
   Serial.begin(9600);
   delay(3000);
 
-  // soundPlayer.initialize();
+  soundPlayer.initialize();
+
+
+  soundPlayer.PlaySound(1);
 
   // Configure the PulseSensor object, by assigning our variables to it.
   // pulseSensor.analogInput(PulseWire);
@@ -209,24 +212,25 @@ void setup()
   //   Serial.println("We created a pulseSensor Object !"); //This prints one time at Arduino power-up,  or on Arduino reset.
   // }
 
-  BPMmonitor.intialize();
+  //BPMmonitor.intialize();
 
   fsm.add_transition(&StateWaitForUser, &StateCalculateBPM,
                      GO_TO_CALCULATE_HEARTBEAT, NULL);
+  // Demo Start
+  //fsm.add_timed_transition(&StateWaitForUser, &StateCalculateBPM, 10000, NULL);
 
   fsm.add_transition(&StateCalculateBPM, &StateWaitForUser,
                      GO_TO_WAIT_FOR_USER, NULL);
 
   fsm.add_transition(&StateCalculateBPM, &StateDisplayBPM, GO_TO_DISPLAY_BPM, NULL);
 
-  fsm.add_timed_transition(&StateCalculateBPM, &StateDisplayBPM, 7000, NULL);
+  fsm.add_timed_transition(&StateCalculateBPM, &StateDisplayBPM, 3000, NULL);
 
   fsm.add_transition(&StateDisplayBPM, &StateCalculateBPM, GO_TO_CALCULATE_HEARTBEAT, NULL);
-  fsm.add_timed_transition(&StateDisplayBPM, &StateWaitForUser, 10000, NULL);
+  fsm.add_timed_transition(&StateDisplayBPM, &StateWaitForUser, 5000, NULL);
 
   matrix.begin(0x72);
   fsm.goToState(&StateWaitForUser);
-  // mySensor.clear();
 }
 
 void loop()
@@ -253,8 +257,11 @@ void loop()
   // Get the smoothed values
   // float smoothedSensorValueAvg = mySensor.get();
   // float smoothedSensorValueExp = mySensor2.get();
-  // soundPlayer.update();
-  BPMmonitor.update();
-  fsm.run_machine();
-  delay(1);
+  soundPlayer.update();
+ // BPMmonitor.update();
+  //fsm.run_machine();
+
+  long value = cs.capacitiveSensor(30);
+
+  delay(100);
 }

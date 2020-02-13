@@ -23,8 +23,8 @@ void SoundPlayer::initialize()
     Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
     int fileCount = 0;
-    bool soundPlaying = false;
 
+    delay(1000);
     if (!myDFPlayer.begin(soundSoftwareSerial))
     { //Use softwareSerial to communicate with mp3.
         Serial.println(F("Unable to begin:"));
@@ -33,7 +33,7 @@ void SoundPlayer::initialize()
         // while (true)
         //     ;
     }
-    //Serial.println(F("DFPlayer Mini online."));
+    Serial.println(F("DFPlayer Mini online."));
 
     myDFPlayer.volume(30); //Set volume value. From 0 to 30
 
