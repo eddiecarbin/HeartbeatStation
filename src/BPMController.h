@@ -1,8 +1,6 @@
 #ifndef BPMCONTROLLER_H_
 #define BPMCONTROLLER_H_
 #include <Arduino.h>
-#include "../lib/Smoothed/src/Smoothed.h"
-// #include <Filter.h>
 
 #define BPM_MIN 60
 #define BPM_MAX 75
@@ -23,7 +21,6 @@ private:
     int _BPM;
     bool detectBeat;
     unsigned long lastBeatTime;
-    Smoothed<float> mySensor;
     // Smoothed<float> mySensor2;
 
 public:
@@ -42,8 +39,6 @@ BPMController::BPMController(int out, int pinLOp, int pinLOn)
     this->LOpinp = pinLOp;
     this->LOpinn = pinLOn;
 
-    pinMode(LOpinp, INPUT); // Setup for leads off detection LO +
-    pinMode(LOpinn, INPUT); // Setup for leads off detection LO -
 }
 
 int BPMController::getBPM()
@@ -61,48 +56,10 @@ bool BPMController::detectContact()
 void BPMController::intialize()
 {
     detectBeat = false;
-    mySensor.begin(SMOOTHED_AVERAGE, 10);
-
-    // Initialise the second sensor value store. We want this one to be a simple linear recursive exponential filter.
-    // We set the filter level to 10. Higher numbers will result in less filtering/smoothing. Lower number result in more filtering/smoothing
-    // mySensor2.begin(SMOOTHED_EXPONENTIAL, 10);
 }
 
 void BPMController::update()
 {
-    unsigned long m = millis();
-    if ((digitalRead(LOpinp) == 1) || (digitalRead(LOpinn) == 1))
-    {
-        detectBeat = false;
-        lastBeatTime = m;
-        Serial.println(":what");
-    }
-    else
-    {
-        // send the value of analog input 0:
-
-        if (m > (lastBeatTime + MIN_BEAT_TIME))
-        {
-        }
-
-        detectBeat = true;
-        int sensorOutput = analogRead(output);
-        Serial.println(sensorOutput);
-        //Serial.print(",");
-        // FilteredSignal->Filter(sensorOutput);
-        //Serial.println(FilteredSignal->Current());
-        //mySensor.add(sensorOutput);
-        // mySensor2.add(sensorOutput);
-        //float s = mySensor.get();
-        //Serial.println(mySensor.get());
-        // Serial.print(",");
-        // Serial.println(mySensor2.get());
-        if (sensorOutput < 200)
-        {
-
-            detectBeat = false;
-        }
-    }
 }
 BPMController::~BPMController()
 {

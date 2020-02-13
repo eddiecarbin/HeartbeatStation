@@ -9,18 +9,22 @@
 //#include "BPMController.h"
 #include "../lib/SoundPlayer/SoundPlayer.h"
 #include <CapacitiveSensor.h>
+#include "CapacitiveTouch.h"
 
 #define USE_ARDUINO_INTERRUPTS true
 #define GO_TO_WAIT_FOR_USER 2
 #define GO_TO_CALCULATE_HEARTBEAT 3
 #define GO_TO_DISPLAY_BPM 4
 
-#define FRAME_PER_SECOND 60
+#define FRAME_PER_SECOND 1000 / 60
 #define THINK_DELAY 200
 #define TOTAL_DIGITS 4
 
 #define BLINK_INTERVAL_0 600
 #define BLINK_INTERVAL_1 300
+
+#define BPM_MIN 60
+#define BPM_MAX 75
 
 Adafruit_7segment matrix = Adafruit_7segment();
 State StateDoNothing(NULL, NULL, NULL);
@@ -34,10 +38,7 @@ int BPM = 0;
 bool userRelased = false;
 
 SoundPlayer soundPlayer(0);
-//BPMController BPMmonitor(A0, 10, 11);
-CapacitiveSensor cs(10, 11);
-
-//CapacitiveSensor cs_4_2 = CapacitiveSensor(4,2);
+CapacitiveTouch sensor;
 
 long map2(long x, long in_min, long in_max, long out_min, long out_max)
 {
@@ -72,27 +73,9 @@ void OnIdleWaitForUserUpdate()
     matrix.writeDisplay();
   }
 
-  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  // {
-  //   Serial.println('!');
-  // }
-  // else
-  // {
-  //   // send the value of analog input 0:
-
-  //   int sensorOutput = analogRead(A0);
-
-  //   Serial.println(analogRead(A0));
-
-  //   if (sensorOutput > 100)
-  //   {
-  //     fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-  //   }
-  // }
-
-  //if (BPMmonitor.detectContact())
+  if (sensor.detectContact())
   {
-    //fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+    fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
   }
 }
 
@@ -127,23 +110,17 @@ void OnCalculateBPMUpdate()
     _pause = millis() + THINK_DELAY;
   }
 
-  // FAILED To get heart beat output a random number  of average heartbeat
-  BPM = 50;//BPMmonitor.getBPM();
-
-  //if (!BPMmonitor.detectContact())
+  if (!sensor.detectContact())
   {
-    //fsm.trigger(GO_TO_WAIT_FOR_USER);
+    fsm.trigger(GO_TO_WAIT_FOR_USER);
   }
-
-  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  // {
-  //   // Serial.println('!');
-  //   fsm.trigger(GO_TO_WAIT_FOR_USER);
-  // }
 }
 
 void OnCalculateBPMExit()
 {
+
+  BPM = random(BPM_MIN, BPM_MAX);
+
   soundPlayer.StopSound();
 }
 
@@ -159,32 +136,16 @@ void OnDisplayBPMEnter()
 void OnDisplyBPMUpdate()
 {
 
-/*  // if (!BPMmonitor.detectContact())
+  if (!sensor.detectContact())
   {
     if (!userRelased)
       userRelased = true;
   }
-  //else
+  else
   {
-    //if (userRelased)
-     // fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-  } */
-
-  // if ((digitalRead(10) == 1) || (digitalRead(11) == 1))
-  // {
-  //   // Serial.println('!');
-
-  //   if (!userRelased)
-  //     userRelased = true;
-  // }
-  // else
-  // {
-  //   // send the value of analog input 0:
-  //   if (userRelased)
-  //     fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
-
-  //   // int sensorOutput = analogRead(A0);
-  // }
+    if (userRelased)
+      fsm.trigger(GO_TO_CALCULATE_HEARTBEAT);
+  }
 }
 
 State StateWaitForUser(&OnIdleWaitForUserEnter, &OnIdleWaitForUserUpdate, NULL);
@@ -199,20 +160,7 @@ void setup()
 
   soundPlayer.initialize();
 
-
-  soundPlayer.PlaySound(1);
-
-  // Configure the PulseSensor object, by assigning our variables to it.
-  // pulseSensor.analogInput(PulseWire);
-  // pulseSensor.setThreshold(Threshold);
-
-  // Double-check the "pulseSensor" object was created and "began" seeing a signal.
-  // if (pulseSensor.begin())
-  // {
-  //   Serial.println("We created a pulseSensor Object !"); //This prints one time at Arduino power-up,  or on Arduino reset.
-  // }
-
-  //BPMmonitor.intialize();
+  sensor.intialize();
 
   fsm.add_transition(&StateWaitForUser, &StateCalculateBPM,
                      GO_TO_CALCULATE_HEARTBEAT, NULL);
@@ -236,32 +184,9 @@ void setup()
 void loop()
 {
 
-  // int myBPM = pulseSensor.getBeatsPerMinute(); // Calls function on our pulseSensor object that returns BPM as an "int".
-  //                                              // "myBPM" hold this BPM value now.
-
-  // if (pulseSensor.sawStartOfBeat())
-  // {                                               // Constantly test to see if "a beat happened".
-  //   Serial.println("♥  A HeartBeat Happened ! "); // If test is "true", print a message "a heartbeat happened".
-  //   Serial.print("BPM: ");                        // Print phrase "BPM: "
-  //   Serial.println(myBPM);                        // Print the value inside of myBPM.
-  // }
-
-  // pulseSensor.outputSample();
-
-  // if (pulseSensor.sawStartOfBeat()) {
-  //   pulseSensor.outputBeat();
-  // }
-
-  // Add the new value to both sensor value stores
-
-  // Get the smoothed values
-  // float smoothedSensorValueAvg = mySensor.get();
-  // float smoothedSensorValueExp = mySensor2.get();
   soundPlayer.update();
- // BPMmonitor.update();
-  //fsm.run_machine();
+  fsm.run_machine();
 
-  long value = cs.capacitiveSensor(30);
-
-  delay(100);
+  sensor.update();
+  delay(FRAME_PER_SECOND);
 }
